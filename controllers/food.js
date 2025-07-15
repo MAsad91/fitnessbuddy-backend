@@ -1,7 +1,7 @@
 const FoodEntry = require('../models/FoodEntry');
 const Jwt = require('jsonwebtoken');
 const moment = require('moment');
-const { analyzeFoodDescription, lookupBarcode, searchFoodSuggestions, getNutritionInfo } = require('../thirdparty/nutritionixAPI');
+const { analyzeFoodDescription, lookupBarcode, searchFoodSuggestions, getNutritionInfo } = require('../ThirdParty/nutritionixAPI');
 
 exports.createFoodEntry = async (req, res) => {
   const { mealType, description } = req.body;
