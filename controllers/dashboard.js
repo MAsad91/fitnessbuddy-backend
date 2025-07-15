@@ -1,10 +1,9 @@
 const FoodEntry = require('../models/FoodEntry');
-const Jwt = require('jsonwebtoken');
 const moment = require('moment');
 const Hydration = require('../models/Hydration');
 const User = require('../models/User');
 
-exports.todayCalories = async (req, res) => {
+exports.todayCalories = async (req, res) => { console.log(req.user);
     try {
         const user = await User.findById(req.user._id);
         if (!user) {
@@ -65,7 +64,7 @@ exports.todayCalories = async (req, res) => {
     }
 };
 
-exports.WeeklyCalories = async (req, res) => {
+exports.weeklyCalories = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user) {
@@ -110,8 +109,7 @@ exports.WeeklyCalories = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: 'Weekly Calories Retrieved Successfully',
-            data: weeklyData,
+            data: weeklyData
         });
     } catch (error) {
         console.error('Error retrieving weekly calories:', error);
@@ -161,6 +159,50 @@ exports.todayWaterIntake = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch today\'s water intake',
+            error: err.message
+        });
+    }
+};
+
+exports.getDashboardGoals = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // For now, return basic goal information
+        // This can be expanded to include actual goal data from a Goals model
+        const dashboardGoals = {
+            calories: {
+                current: 0, // This would be calculated from today's food entries
+                goal: user.dailyCalorieGoal || 2000,
+                percentage: 0
+            },
+            water: {
+                current: 0, // This would be calculated from today's hydration entries
+                goal: user.dailyWaterGoal || 2000,
+                percentage: 0
+            },
+            weight: {
+                current: user.currentWeight || 0,
+                goal: user.weightGoal || 0,
+                percentage: 0
+            }
+        };
+
+        res.status(200).json({
+            success: true,
+            data: dashboardGoals
+        });
+    } catch (err) {
+        console.error('Error fetching dashboard goals:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch dashboard goals',
             error: err.message
         });
     }

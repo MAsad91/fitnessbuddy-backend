@@ -156,11 +156,8 @@ const getWeightGoal = asyncHandler(async (req, res) => {
     status: 'active'
   });
 
-  if (!goal) {
-    return res.status(404).json({ message: 'No active weight goal found' });
-  }
-
-  res.json(goal);
+  // Return null if no goal found (this is an expected state)
+  res.json(goal || null);
 });
 
 // @desc    Update weight goal status

@@ -237,14 +237,7 @@ const getExercisesByMuscleGroup = async (req, res) => {
 
     console.log(`Found ${exercises.length} exercises`);
 
-    if (!exercises.length) {
-      console.log('No exercises found for this muscle group');
-      return res.status(404).json({ 
-        message: 'No exercises found for this muscle group',
-        searchedGroup: formattedGroup
-      });
-    }
-
+    // Return empty array instead of 404 when no exercises found
     res.json(exercises);
   } catch (err) {
     console.error('Error in getExercisesByMuscleGroup:', err);
@@ -1636,10 +1629,35 @@ const getMuscleAnalysis = async (req, res) => {
   }
 };
 
+const getWorkoutById = async (req, res) => {
+  try {
+    console.log('Fetching workout by ID:', req.params.id);
+    const workout = await Workout.findById(req.params.id)
+      .populate('exercises.exerciseId');
+
+    if (!workout) {
+      console.log('No workout found with ID:', req.params.id);
+      return res.status(404).json({ message: 'Workout not found' });
+    }
+
+    if (workout.userId.toString() !== req.user.id) {
+      console.log('User not authorized:', { workoutUserId: workout.userId, requestUserId: req.user.id });
+      return res.status(403).json({ message: 'Not authorized to view this workout' });
+    }
+
+    console.log('Found workout:', workout);
+    res.json(workout);
+  } catch (err) {
+    console.error('Error fetching workout:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Export all functions
 module.exports = {
   createWorkout,
   getWorkouts,
+  getWorkoutById,
   deleteWorkout,
   createExercise,
   getAllExercises,

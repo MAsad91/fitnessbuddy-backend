@@ -22,6 +22,15 @@ app.use(express.json());
 // Database connection
 connectDB();
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
@@ -32,10 +41,9 @@ app.use('/api/hydration', require('./routes/hydration'));
 app.use('/api/community', require('./routes/community'));
 app.use('/api/goals', require('./routes/goals'));
 app.use('/api/challenges', require('./routes/challenge'));
-app.use('/api/calendar', require('./routes/calender'));
+app.use('/api/calendar', require('./routes/calender')); // Note: file is named 'calender'
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/weight', require('./routes/weightRoutes')); // Weight tracking routes
-app.use('/api/settings', require('./routes/settings')); // Settings routes
 
 const PORT = process.env.PORT || 5000;
 // Listen on all network interfaces

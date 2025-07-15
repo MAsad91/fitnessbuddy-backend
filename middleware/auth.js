@@ -17,7 +17,7 @@ exports.protect = async (req, res, next) => {
   else if (req.query && req.query.token) {
     token = req.query.token;
   }
-
+console.log(token);
   // Check if token exists
   if (!token) {
     return res.status(401).json({

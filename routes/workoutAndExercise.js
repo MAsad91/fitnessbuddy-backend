@@ -19,12 +19,14 @@ const {
   generateRecommendations,
   getRecommendations,
   generateMuscleAnalysis,
-  getMuscleAnalysis
+  getMuscleAnalysis,
+  getWorkoutById
 } = require('../controllers/workoutAndExercise');
 
 // Workout routes
 router.post('/create', protect, createWorkout);
 router.get('/', protect, getWorkouts);
+router.get('/:id', protect, getWorkoutById);
 router.delete('/:id', protect, deleteWorkout);
 router.post('/:id/exercises', protect, addExerciseToWorkout);
 

@@ -4,9 +4,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const UserSchema = new mongoose.Schema({
-  username: {
+  name: {
     type: String,
-    required: [true, 'Please add a username']
+    required: [true, 'Please add a name']
   },
   email: {
     type: String,
@@ -22,6 +22,33 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'Please add a password'],
     minlength: 6,
     select: false
+  },
+  profilePicture: {
+    url: String,
+    publicId: String
+  },
+  progressPictures: [{
+    url: String,
+    publicId: String,
+    date: {
+      type: Date,
+      default: Date.now
+    },
+    notes: String,
+    measurements: {
+      weight: Number,
+      bodyFat: Number,
+      chest: Number,
+      waist: Number,
+      hips: Number,
+      arms: Number,
+      thighs: Number
+    }
+  }],
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   isVerified: {
     type: Boolean,
@@ -63,16 +90,73 @@ const UserSchema = new mongoose.Schema({
       default: 0.5 // kg per week
     }
   },
-  preferences: {
-    measurementUnit: {
-      type: String,
-      enum: ['metric', 'imperial'],
-      default: 'metric'
-    },
+  settings: {
     theme: {
-      type: String,
-      enum: ['light', 'dark'],
-      default: 'light'
+      mode: {
+        type: String,
+        enum: ['light', 'dark'],
+        default: 'light'
+      },
+      systemDefault: {
+        type: Boolean,
+        default: true
+      }
+    },
+    notifications: {
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      mealReminders: {
+        type: Boolean,
+        default: true
+      },
+      waterReminders: {
+        type: Boolean,
+        default: true
+      },
+      goalUpdates: {
+        type: Boolean,
+        default: true
+      },
+      weeklyReports: {
+        type: Boolean,
+        default: true
+      },
+      reminderTime: {
+        type: String,
+        default: '09:00'
+      }
+    },
+    preferences: {
+      biometricAuth: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        lastUpdated: {
+          type: Date,
+          default: null
+        },
+        deviceId: {
+          type: String,
+          default: null
+        }
+      },
+      language: {
+        type: String,
+        default: 'en'
+      },
+      measurementSystem: {
+        type: String,
+        enum: ['metric', 'imperial'],
+        default: 'metric'
+      },
+      startOfWeek: {
+        type: String,
+        enum: ['monday', 'sunday'],
+        default: 'monday'
+      }
     }
   },
   resetPasswordToken: String,
