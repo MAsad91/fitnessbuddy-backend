@@ -113,7 +113,7 @@ const sendEmail = async ({ email, subject, message }) => {
       : null;
 
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USERNAME,
       to: email,
       subject: subject,
       // If it's a verification email, use HTML template, otherwise send plain text

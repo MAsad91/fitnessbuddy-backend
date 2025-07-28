@@ -1,5 +1,5 @@
 const express = require('express');
-const { createEvent, getEvents } = require('../controllers/calendar.js');
+const { createEvent, getEvents } = require('../controllers/calendar');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();

@@ -17,16 +17,26 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Database connection
 connectDB();
 
-// Health check endpoint
+// Health check endpoints (must be before routes to avoid conflicts)
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Health check endpoint for mobile app IP detection
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Backend is running',
     timestamp: new Date().toISOString()
   });
 });
@@ -41,7 +51,7 @@ app.use('/api/hydration', require('./routes/hydration'));
 app.use('/api/community', require('./routes/community'));
 app.use('/api/goals', require('./routes/goals'));
 app.use('/api/challenges', require('./routes/challenge'));
-app.use('/api/calendar', require('./routes/calender')); // Note: file is named 'calender'
+app.use('/api/calendar', require('./routes/calendar'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/weight', require('./routes/weightRoutes')); // Weight tracking routes
 

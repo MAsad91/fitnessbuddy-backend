@@ -2,6 +2,10 @@ const FoodEntry = require('../models/FoodEntry');
 const Jwt = require('jsonwebtoken');
 const moment = require('moment');
 const { analyzeFoodDescription, lookupBarcode, searchFoodSuggestions, getNutritionInfo } = require('../ThirdParty/nutritionixAPI');
+const axios = require('axios');
+//const LocalFoodProduct = require('../models/LocalFoodProduct');
+//const PakistaniFoodItem = require('../models/PakistaniFoodItem');
+const PakistaniFoodItems = require('../models/PakistaniFoodItems');
 
 exports.createFoodEntry = async (req, res) => {
   const { mealType, description } = req.body;
@@ -23,22 +27,43 @@ exports.createFoodEntry = async (req, res) => {
       }
     }
 
-    const foods = await analyzeFoodDescription(description);
+    let foods;
+    try {
+      foods = await analyzeFoodDescription(description);
+    } catch (err) {
+      // Fallback: try to find in PakistaniFoodItems by name
+      const localFood = await PakistaniFoodItems.findOne({ name: description });
+      if (localFood) {
+        foods = [{
+          food_name: localFood.name,
+          serving_qty: localFood.servingSize,
+          serving_unit: localFood.servingSizeUnit,
+          nf_calories: localFood.nutrition?.calories,
+          nf_protein: localFood.nutrition?.protein,
+          nf_total_carbohydrate: localFood.nutrition?.carbohydrates,
+          nf_total_fat: localFood.nutrition?.fat,
+        }];
+      } else {
+        // If not found, return a user-friendly error
+        return res.status(404).json({ message: 'No nutrition data found for this description.' });
+      }
+    }
+
     const analyzedFood = foods.map((food) => ({
       foodName: food.food_name,
-      servingQty: food.serving_qty,
+      servingQty: Number(food.serving_qty) || 0,
       servingUnit: food.serving_unit,
-      calories: food.nf_calories,
-      protein: food.nf_protein,
-      carbs: food.nf_total_carbohydrate,
-      fats: food.nf_total_fat,
+      calories: Number(food.nf_calories) || 0,
+      protein: Number(food.nf_protein) || 0,
+      carbs: Number(food.nf_total_carbohydrate) || 0,
+      fats: Number(food.nf_total_fat) || 0,
     }));
 
     const totals = {
-      calories: analyzedFood.reduce((sum, f) => sum + f.calories, 0),
-      protein: analyzedFood.reduce((sum, f) => sum + f.protein, 0),
-      carbs: analyzedFood.reduce((sum, f) => sum + f.carbs, 0),
-      fats: analyzedFood.reduce((sum, f) => sum + f.fats, 0),
+      calories: analyzedFood.reduce((sum, f) => sum + (Number(f.calories) || 0), 0),
+      protein: analyzedFood.reduce((sum, f) => sum + (Number(f.protein) || 0), 0),
+      carbs: analyzedFood.reduce((sum, f) => sum + (Number(f.carbs) || 0), 0),
+      fats: analyzedFood.reduce((sum, f) => sum + (Number(f.fats) || 0), 0),
     };
 
     const entry = new FoodEntry({
@@ -148,25 +173,104 @@ exports.deleteFoodEntry = async (req, res) => {
 
 exports.getBarcodeInfo = async (req, res) => {
   try {
-    const item = await lookupBarcode(req.params.code);
-
-    if (item) {
+    const code = req.params.code;
+    // Log all barcodes that match the string or number form for debugging
+    const possibleMatches = await PakistaniFoodItems.find({
+      $or: [
+        { barcode: code },
+        { barcode: code.replace(/^0+/, '') },
+        { barcode: Number(code) },
+        { barcode: String(Number(code)) }
+      ]
+    });
+    // 0. Check PakistaniFoodItems first (string and number forms)
+    const pkFood = possibleMatches[0];
+    if (pkFood) {
       return res.json({
-        name: item.food_name,
-        brand: item.brand_name,
-        calories: item.nf_calories,
-        protein: item.nf_protein,
-        carbs: item.nf_total_carbohydrate,
-        fat: item.nf_total_fat,
-        serving_size: item.serving_qty,
-        serving_unit: item.serving_unit,
+        name: pkFood.name,
+        brand: pkFood.brand || '',
+        description: pkFood.description,
+        category: pkFood.category,
+        subcategory: pkFood.subcategory,
+        servingSize: pkFood.servingSize,
+        servingSizeUnit: pkFood.servingSizeUnit,
+        servingWeight: pkFood.servingWeight,
+        nutrition: pkFood.nutrition,
+        commonPreparation: pkFood.commonPreparation,
+        region: pkFood.region,
+        mealType: pkFood.mealType,
+        ingredients: pkFood.ingredients,
+        allergens: pkFood.allergens,
+        country: pkFood.country,
+        verified: pkFood.verified,
+        source: 'pakistani_food_items',
+        isPackagedProduct: pkFood.isPackagedProduct,
+        isTraditionalFood: pkFood.isTraditionalFood,
+        popularity: pkFood.popularity,
+        searchCount: pkFood.searchCount,
+        lastUpdated: pkFood.lastUpdated,
+        barcode: pkFood.barcode
       });
     }
-
-    res.status(404).json({ message: 'Product not found' });
+    // Only check external sources if not found in PakistaniFoodItems
+    // 1. Try Nutritionix
+    let item;
+    try {
+      item = await lookupBarcode(req.params.code);
+    } catch (err) {
+      if (err.response && err.response.status === 404) {
+        // Nutritionix: Barcode not found (404)
+      } else {
+        console.error('Nutritionix lookup error:', err.message);
+      }
+      item = null;
+    }
+    if (item && item.foods && item.foods.length > 0) {
+      const foodItem = item.foods[0];
+      return res.json({
+        name: foodItem.food_name,
+        brand: foodItem.brand_name,
+        calories: foodItem.nf_calories,
+        protein: foodItem.nf_protein,
+        carbs: foodItem.nf_total_carbohydrate,
+        fat: foodItem.nf_total_fat,
+        serving_size: foodItem.serving_qty,
+        serving_unit: foodItem.serving_unit,
+        source: 'nutritionix',
+      });
+    }
+    // 2. Try Open Food Facts
+    try {
+      const offResp = await axios.get(`https://world.openfoodfacts.org/api/v2/product/${req.params.code}`);
+      const offData = offResp.data;
+      if (offData.status === 1 && offData.product) {
+        const product = offData.product;
+        return res.json({
+          name: product.product_name || '',
+          brand: product.brands || '',
+          calories: product.nutriments['energy-kcal_100g'] || 0,
+          protein: product.nutriments.proteins_100g || 0,
+          carbs: product.nutriments.carbohydrates_100g || 0,
+          fat: product.nutriments.fat_100g || 0,
+          serving_size: product.serving_size || '',
+          serving_unit: product.serving_quantity || '',
+          source: 'openfoodfacts',
+        });
+      }
+    } catch (offErr) {
+      console.error('Open Food Facts lookup error:', offErr.message);
+    }
+    // Not found in any source
+    res.status(404).json({
+      success: false,
+      message: 'Product not found in PakistaniFoodItems, Nutritionix, or Open Food Facts'
+    });
   } catch (error) {
-    console.error('Barcode lookup error:', error);
-    res.status(500).json({ message: 'Error looking up product' });
+    console.error('❌ Barcode lookup error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error looking up product'
+    });
   }
 };
 
@@ -217,5 +321,49 @@ exports.getNutritionInfo = async (req, res) => {
       success: false,
       message: err.message || 'Failed to fetch nutrition information'
     });
+  }
+};
+
+// New: Add food entry by name and quantity (for Pakistani foods)
+exports.createPakistaniFoodEntry = async (req, res) => {
+  try {
+    const { foodName, quantity, mealType } = req.body;
+    if (!foodName || !quantity || !mealType) {
+      return res.status(400).json({ success: false, message: 'foodName, quantity, and mealType are required' });
+    }
+
+    // Find food by name or alias
+    const foodItem = await PakistaniFoodItem.findOne({
+      $or: [
+        { name: new RegExp('^' + foodName + '$', 'i') },
+        { aliases: { $in: [new RegExp('^' + foodName + '$', 'i')] } }
+      ]
+    });
+    if (!foodItem) {
+      return res.status(404).json({ success: false, message: 'Food not found in Pakistani food database' });
+    }
+
+    // Calculate nutrition
+    const qty = Number(quantity);
+    const entry = {
+      foodName: foodItem.name,
+      mealType,
+      quantity: qty,
+      serving_size: foodItem.serving_size,
+      calories: foodItem.calories_per_serving * qty,
+      protein: (foodItem.protein_per_serving || 0) * qty,
+      carbs: (foodItem.carbs_per_serving || 0) * qty,
+      fat: (foodItem.fat_per_serving || 0) * qty,
+      createdAt: new Date(),
+      userId: req.user._id
+    };
+
+    // Save to FoodEntry (reuse your existing model)
+    const FoodEntry = require('../models/FoodEntry');
+    const saved = await FoodEntry.create(entry);
+    res.status(201).json({ success: true, data: saved });
+  } catch (err) {
+    console.error('Error creating Pakistani food entry:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
