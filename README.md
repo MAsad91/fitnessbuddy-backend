@@ -355,8 +355,8 @@ For support and questions:
 
 **Built with ❤️ for the fitness community**
 
-[![GitHub stars](https://img.shields.io/github/stars/your-repo/calories-calculator)](https://github.com/your-repo/calories-calculator)
-[![GitHub forks](https://img.shields.io/github/forks/your-repo/calories-calculator)](https://github.com/your-repo/calories-calculator)
-[![GitHub issues](https://img.shields.io/github/issues/your-repo/calories-calculator)](https://github.com/your-repo/calories-calculator)
+[![GitHub stars](https://img.shields.io/github/stars/MAsad91/fitnessbuddy-backend)]([https://github.com/MAsad91/fitnessbuddy-backend](https://github.com/MAsad91/fitnessbuddy-backend)
+[![GitHub forks](https://img.shields.io/github/forks/MAsad91/fitnessbuddy-backend)]([https://github.com/MAsad91/fitnessbuddy-backend](https://github.com/MAsad91/fitnessbuddy-backend)
+[![GitHub issues](https://img.shields.io/github/issues/MAsad91/fitnessbuddy-backend)](https://github.com/MAsad91/fitnessbuddy-backend)
 
 </div>
