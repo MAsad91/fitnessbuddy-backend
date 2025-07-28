@@ -147,11 +147,16 @@ backend/
 
 4. **Start the server**
    ```bash
-   # Development mode
+   # Development mode (with auto-reload)
    npm run dev
+   npm run nodemon
+   nodemon start
    
    # Production mode
    npm start
+   
+   # Direct node start
+   node server.js
    ```
 
 ### Environment Variables
@@ -284,6 +289,27 @@ npm run seed
 - ESLint configuration
 - Prettier formatting
 - Consistent code style
+
+### Troubleshooting
+
+**If nodemon is not recognized:**
+```bash
+# Install nodemon globally
+npm install -g nodemon
+
+# Or use npx
+npx nodemon server.js
+
+# Or run directly with node
+node server.js
+```
+
+**If you get permission errors:**
+```bash
+# On Windows, run PowerShell as Administrator
+# On Mac/Linux, use sudo
+sudo npm install -g nodemon
+```
 
 ## 🚀 Deployment
 
