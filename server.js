@@ -89,6 +89,11 @@ app.use('/api/challenges', require('./routes/challenge'));
 app.use('/api/calendar', require('./routes/calendar'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/weight', require('./routes/weightRoutes')); // Weight tracking routes
+app.use('/api/bmr', require('./routes/bmr')); // BMR calculation routes
+app.use('/api/progress', require('./routes/progress')); // Progress tracking routes
+app.use('/api/notifications', require('./routes/notifications')); // Notification routes
+app.use('/api/food-notifications', require('./routes/foodNotifications')); // Food notification routes
+app.use('/api/users/settings', require('./routes/settings')); // User settings routes
 
 const PORT = process.env.PORT || 5000;
 // Listen on all network interfaces
