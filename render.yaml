@@ -38,4 +38,12 @@ services:
       - key: NUTRITIONIX_APP_ID
         sync: false
       - key: NUTRITIONIX_API_KEY
-        sync: false 
+        sync: false
+      - key: FRONTEND_URL
+        value: https://your-frontend-domain.com
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: LOG_LEVEL
+        value: info 
