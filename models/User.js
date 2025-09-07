@@ -161,6 +161,35 @@ const UserSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+  fcmToken: String,
+  currentStreak: {
+    type: Number,
+    default: 0
+  },
+  lastActiveDate: {
+    type: Date,
+    default: Date.now
+  },
+  notificationSettings: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  foodNotificationPreferences: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  favoriteFoods: [{
+    foodId: String,
+    foodName: String,
+    calories: Number,
+    protein: Number,
+    carbs: Number,
+    fat: Number,
+    addedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

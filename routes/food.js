@@ -11,5 +11,8 @@ router.delete('/entries/:id', protect, foodController.deleteFoodEntry);
 router.get('/barcode/:code', protect, foodController.getBarcodeInfo);
 router.get('/search', protect, foodController.searchFood);
 router.get('/nutrition', protect, foodController.getNutritionInfo);
+router.get('/favorites', protect, foodController.getFavorites);
+router.post('/favorites', protect, foodController.addToFavorites);
+router.delete('/favorites/:id', protect, foodController.removeFromFavorites);
 
 module.exports = router;

@@ -1,76 +1,125 @@
-const Settings = require('../models/Settings');
-const asyncHandler = require('../middleware/async');
-const ErrorResponse = require('../utils/errorResponse');
+const User = require('../models/User');
 
 // @desc    Get user settings
-// @route   GET /api/v1/settings
+// @route   GET /api/users/settings
 // @access  Private
-exports.getSettings = asyncHandler(async (req, res, next) => {
-  const settings = await Settings.findOne({ userId: req.user.id });
-  
-  if (!settings) {
-    // Create default settings if none exist
-    const defaultSettings = await Settings.create({
-      userId: req.user.id
+exports.getSettings = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('settings notificationSettings foodNotificationPreferences');
+    
+    res.json({
+      success: true,
+      settings: user.settings || {},
+      notificationSettings: user.notificationSettings || {},
+      foodNotificationPreferences: user.foodNotificationPreferences || {}
     });
-    return res.status(200).json(defaultSettings);
+  } catch (error) {
+    console.error('Error getting settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get settings'
+    });
   }
-
-  res.status(200).json(settings);
-});
+};
 
 // @desc    Update user settings
-// @route   PUT /api/v1/settings
+// @route   PUT /api/users/settings
 // @access  Private
-exports.updateSettings = asyncHandler(async (req, res, next) => {
-  let settings = await Settings.findOne({ userId: req.user.id });
-  
-  if (!settings) {
-    settings = await Settings.create({
-      userId: req.user.id,
-      ...req.body
+exports.updateSettings = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { settings, notificationSettings, foodNotificationPreferences } = req.body;
+
+    const updateData = {};
+    if (settings) updateData.settings = settings;
+    if (notificationSettings) updateData.notificationSettings = notificationSettings;
+    if (foodNotificationPreferences) updateData.foodNotificationPreferences = foodNotificationPreferences;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('settings notificationSettings foodNotificationPreferences');
+
+    res.json({
+      success: true,
+      message: 'Settings updated successfully',
+      settings: user.settings,
+      notificationSettings: user.notificationSettings,
+      foodNotificationPreferences: user.foodNotificationPreferences
     });
-  } else {
-    settings = await Settings.findOneAndUpdate(
-      { userId: req.user.id },
-      req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    );
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update settings'
+    });
   }
+};
 
-  res.status(200).json(settings);
-});
-
-// @desc    Update biometric settings
-// @route   PUT /api/v1/settings/biometrics
+// @desc    Get specific setting
+// @route   GET /api/users/settings/:key
 // @access  Private
-exports.updateBiometricSettings = asyncHandler(async (req, res, next) => {
-  const { useBiometrics } = req.body;
+exports.getSetting = async (req, res) => {
+  try {
+    const { key } = req.params;
+    const user = await User.findById(req.user._id).select('settings notificationSettings foodNotificationPreferences');
+    
+    let value = null;
+    if (user.settings && user.settings[key]) {
+      value = user.settings[key];
+    } else if (user.notificationSettings && user.notificationSettings[key]) {
+      value = user.notificationSettings[key];
+    } else if (user.foodNotificationPreferences && user.foodNotificationPreferences[key]) {
+      value = user.foodNotificationPreferences[key];
+    }
 
-  if (typeof useBiometrics !== 'boolean') {
-    return next(new ErrorResponse('Invalid biometric setting value', 400));
-  }
-
-  let settings = await Settings.findOne({ userId: req.user.id });
-  
-  if (!settings) {
-    settings = await Settings.create({
-      userId: req.user.id,
-      preferences: { useBiometrics }
+    res.json({
+      success: true,
+      key,
+      value
     });
-  } else {
-    settings = await Settings.findOneAndUpdate(
-      { userId: req.user.id },
-      { 'preferences.useBiometrics': useBiometrics },
-      {
-        new: true,
-        runValidators: true
-      }
-    );
+  } catch (error) {
+    console.error('Error getting setting:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get setting'
+    });
   }
+};
 
-  res.status(200).json(settings);
-}); 
+// @desc    Update specific setting
+// @route   PUT /api/users/settings/:key
+// @access  Private
+exports.updateSetting = async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+    const userId = req.user._id;
+
+    // Determine which settings object to update based on the key
+    let updateData = {};
+    if (['theme', 'preferences'].includes(key)) {
+      updateData[`settings.${key}`] = value;
+    } else if (['enabled', 'mealReminders', 'waterReminders', 'goalUpdates', 'weeklyReports', 'reminderTime'].includes(key)) {
+      updateData[`notificationSettings.${key}`] = value;
+    } else {
+      updateData[`foodNotificationPreferences.${key}`] = value;
+    }
+
+    await User.findByIdAndUpdate(userId, updateData);
+
+    res.json({
+      success: true,
+      message: 'Setting updated successfully',
+      key,
+      value
+    });
+  } catch (error) {
+    console.error('Error updating setting:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update setting'
+    });
+  }
+}; 

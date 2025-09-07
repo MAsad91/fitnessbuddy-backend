@@ -367,3 +367,109 @@ exports.createPakistaniFoodEntry = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+// Get user's favorite foods
+exports.getFavorites = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Get user's favorite foods from their profile
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('favoriteFoods');
+    
+    res.json({
+      success: true,
+      favorites: user.favoriteFoods || []
+    });
+  } catch (error) {
+    console.error('Error getting favorites:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get favorite foods'
+    });
+  }
+};
+
+// Add food to favorites
+exports.addToFavorites = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { foodId, foodName, calories, protein, carbs, fat } = req.body;
+    
+    const User = require('../models/User');
+    const user = await User.findById(userId);
+    
+    if (!user.favoriteFoods) {
+      user.favoriteFoods = [];
+    }
+    
+    // Check if already in favorites
+    const existingFavorite = user.favoriteFoods.find(fav => fav.foodId === foodId);
+    if (existingFavorite) {
+      return res.status(400).json({
+        success: false,
+        message: 'Food already in favorites'
+      });
+    }
+    
+    // Add to favorites
+    user.favoriteFoods.push({
+      foodId,
+      foodName,
+      calories,
+      protein,
+      carbs,
+      fat,
+      addedAt: new Date()
+    });
+    
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Food added to favorites',
+      favorites: user.favoriteFoods
+    });
+  } catch (error) {
+    console.error('Error adding to favorites:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add food to favorites'
+    });
+  }
+};
+
+// Remove food from favorites
+exports.removeFromFavorites = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { id } = req.params;
+    
+    const User = require('../models/User');
+    const user = await User.findById(userId);
+    
+    if (!user.favoriteFoods) {
+      return res.status(404).json({
+        success: false,
+        message: 'No favorites found'
+      });
+    }
+    
+    // Remove from favorites
+    user.favoriteFoods = user.favoriteFoods.filter(fav => fav._id.toString() !== id);
+    
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Food removed from favorites',
+      favorites: user.favoriteFoods
+    });
+  } catch (error) {
+    console.error('Error removing from favorites:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove food from favorites'
+    });
+  }
+};
