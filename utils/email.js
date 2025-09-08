@@ -97,7 +97,7 @@ const createEmailTemplate = (verificationUrl) => {
   `;
 };
 
-const sendEmail = async ({ email, subject, message }) => {
+const sendEmail = async ({ email, subject, message, html }) => {
   try {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -108,7 +108,7 @@ const sendEmail = async ({ email, subject, message }) => {
     });
 
     // Extract verification URL from message if it exists
-    const verificationUrl = message.includes('verify-email') 
+    const verificationUrl = message && message.includes('verify-email') 
       ? message.match(/https?:\/\/[^\s]+/)?.[0] 
       : null;
 
@@ -116,8 +116,10 @@ const sendEmail = async ({ email, subject, message }) => {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USERNAME,
       to: email,
       subject: subject,
-      // If it's a verification email, use HTML template, otherwise send plain text
-      ...(verificationUrl 
+      // Priority: html parameter > verification template > plain text
+      ...(html 
+        ? { html: html }
+        : verificationUrl 
         ? { html: createEmailTemplate(verificationUrl) }
         : { text: message }
       )
