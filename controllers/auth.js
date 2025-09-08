@@ -120,7 +120,7 @@ exports.forgotPassword = async (req, res) => {
         }
 
         // Generate a random password
-        const randomPassword = crypto.randomBytes(12).toString('hex'); // 24 character password
+        const randomPassword = crypto.randomBytes(4).toString('hex'); // 8 character password
         
         // Hash the new password
         const salt = await bcrypt.genSalt(10);
